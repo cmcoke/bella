@@ -228,6 +228,78 @@ const createHoverReveal = e => {
   }
 };
 
+/** */
+const initPortfolioHover = () => {
+  //
+  const allLinks = gsap.utils.toArray(".portfolio__categories a");
+  const pageBackground = document.querySelector(".fill-background");
+  const largeImage = document.querySelector(".portfolio__image--l");
+  const smallImage = document.querySelector(".portfolio__image--s");
+  const lInside = document.querySelector(".portfolio__image--l .image_inside");
+  const sIndise = document.querySelector(".portfolio__image--s .image_inside");
+
+  /**
+   * Loop through each category link and attach hover + move events.
+   */
+  allLinks.forEach(link => {
+    /**
+     * When the mouse enters a link (hover in)
+     */
+    link.addEventListener("mouseenter", e => {
+      // Destructures custom data attributes from the hovered link.
+      // These contain the hover color + the image URLs.
+      const { color, imagelarge, imagesmall } = e.target.dataset;
+      // console.log(color, imagelarge, imagesmall);
+
+      // Gets all other links except the hovered one (to fade them out).
+      const allSiblings = allLinks.filter(item => item !== e.target);
+
+      // Creates a GSAP timeline to sequence animations cleanly.
+      const tl = gsap.timeline();
+
+      //
+      tl.set(lInside, { backgroundImage: `url(${imagelarge})` }) // Updates the large image background instantly.
+        .set(sIndise, { backgroundImage: `url(${imagesmall})` }) // Updates the small image background instantly.
+        .to([largeImage, smallImage], { duration: 1, autoAlpha: 1 }) // Fades both floating images in.
+        .to(allSiblings, { color: "#fff", autoAlpha: 0.2 }, 0) // Fades and dims all other category links (starts at time 0).
+        .to(e.target, { color: "#fff", autoAlpha: 1 }, 0) // Brightens the hovered link (also at time 0).
+        .to(pageBackground, { backgroundColor: color, ease: "none" }, 0); // Changes the page background color to the link's assigned color.
+    });
+
+    /**
+     * When the mouse leaves the link (hover out)
+     */
+    link.addEventListener("mouseleave", e => {
+      // Creates a new timeline to reverse/reset animations.
+      const tl = gsap.timeline();
+
+      tl.to([largeImage, smallImage], { duration: 1, autoAlpha: 0 }) // Fades both large & small floating images out.
+        .to(allLinks, { color: "#000", autoAlpha: 1 }, 0) // Resets all link colors + opacity to normal.
+        .to(pageBackground, { backgroundColor: "#ACB7AB", ease: "none" }, 0); // Resets the background color to the default neutral color.
+    });
+
+    /**
+     * Moves the floating images vertically based on mouse movement.
+     */
+    link.addEventListener("mousemove", e => {
+      // Gets the vertical mouse position inside the viewport.
+      const { clientY } = e;
+
+      gsap.to(largeImage, {
+        duration: 1.2, // Smooth, delayed follow effect.
+        y: getPortfolioOffset(clientY) / 6, // Moves the large image slightly (subtle parallax).
+        ease: "power3.out" // Smooth deceleration.
+      });
+
+      gsap.to(smallImage, {
+        duration: 1.5, // Slightly slower for added depth.
+        y: getPortfolioOffset(clientY) / 3, // Small image moves more for stronger parallax.
+        ease: "power3.out" // Smooth easing.
+      });
+    });
+  });
+};
+
 // Create a MediaQueryList object that tracks when the viewport is >= 768px
 const mq = window.matchMedia("(min-width: 768px)");
 
@@ -237,6 +309,7 @@ const mq = window.matchMedia("(min-width: 768px)");
 const init = () => {
   initNavigation(); // Sets up all navigation animations and scroll triggers.
   initHeaderTilt(); // Sets up the header tilt effect.
+  initPortfolioHover(); // Activates all portfolio hover interactions.
 
   /**
    * Sets up the responsive hover reveal behavior (desktop only).
@@ -304,4 +377,10 @@ const handleWidthChange = e => {
       resetProps([imageBlock, mask, text, textCopy, textMask, textP, image]);
     });
   }
+};
+
+// Calculates a vertical offset relative to the category container height.
+// Used for creating smooth parallax movement based on mouse position. (used in the portfoilio hover effect)
+const getPortfolioOffset = clientY => {
+  return -(document.querySelector(".portfolio__categories").clientHeight - clientY);
 };
