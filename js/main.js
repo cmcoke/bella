@@ -228,15 +228,16 @@ const createHoverReveal = e => {
   }
 };
 
-/** */
+/**
+ * Initializes all hover + movement interactions for the portfolio section.
+ */
 const initPortfolioHover = () => {
-  //
-  const allLinks = gsap.utils.toArray(".portfolio__categories a");
-  const pageBackground = document.querySelector(".fill-background");
-  const largeImage = document.querySelector(".portfolio__image--l");
-  const smallImage = document.querySelector(".portfolio__image--s");
-  const lInside = document.querySelector(".portfolio__image--l .image_inside");
-  const sIndise = document.querySelector(".portfolio__image--s .image_inside");
+  const allLinks = gsap.utils.toArray(".portfolio__categories a"); // Selects all category links and converts them to an array.
+  const pageBackground = document.querySelector(".fill-background"); // Selects the background element that will fade to different colors.
+  const largeImage = document.querySelector(".portfolio__image--l"); // Container for the large floating image.
+  const smallImage = document.querySelector(".portfolio__image--s"); // Container for the small floating image.
+  const lInside = document.querySelector(".portfolio__image--l .image_inside"); // Inner element that actually displays the large image.
+  const sIndise = document.querySelector(".portfolio__image--s .image_inside"); // Inner element that displays the small image.
 
   /**
    * Loop through each category link and attach hover + move events.
@@ -246,56 +247,135 @@ const initPortfolioHover = () => {
      * When the mouse enters a link (hover in)
      */
     link.addEventListener("mouseenter", e => {
-      // Destructures custom data attributes from the hovered link.
-      // These contain the hover color + the image URLs.
+      // Extracts the color + image URLs stored in the hovered link’s data attributes.
       const { color, imagelarge, imagesmall } = e.target.dataset;
       // console.log(color, imagelarge, imagesmall);
 
-      // Gets all other links except the hovered one (to fade them out).
+      // Creates an array of all other links (used to dim them on hover).
       const allSiblings = allLinks.filter(item => item !== e.target);
 
-      // Creates a GSAP timeline to sequence animations cleanly.
+      // Creates a GSAP timeline to sequence multiple animations smoothly.
       const tl = gsap.timeline();
 
-      //
-      tl.set(lInside, { backgroundImage: `url(${imagelarge})` }) // Updates the large image background instantly.
-        .set(sIndise, { backgroundImage: `url(${imagesmall})` }) // Updates the small image background instantly.
-        .to([largeImage, smallImage], { duration: 1, autoAlpha: 1 }) // Fades both floating images in.
-        .to(allSiblings, { color: "#fff", autoAlpha: 0.2 }, 0) // Fades and dims all other category links (starts at time 0).
-        .to(e.target, { color: "#fff", autoAlpha: 1 }, 0) // Brightens the hovered link (also at time 0).
-        .to(pageBackground, { backgroundColor: color, ease: "none" }, 0); // Changes the page background color to the link's assigned color.
+      tl.set(lInside, { backgroundImage: `url(${imagelarge})` }) // Instantly updates the large preview image.
+        .set(sIndise, { backgroundImage: `url(${imagesmall})` }) // Instantly updates the small preview image.
+        .to([largeImage, smallImage], { duration: 1, autoAlpha: 1 }) // Fades both floating images into view.
+        .to(allSiblings, { color: "#fff", autoAlpha: 0.2 }, 0) // Fades + dims all non-hovered links (starts at same time 0).
+        .to(e.target, { color: "#fff", autoAlpha: 1 }, 0) // Highlights the hovered link (also at time 0).
+        .to(pageBackground, { backgroundColor: color, ease: "none" }, 0); // Changes page background color to the link’s assigned color.
     });
 
     /**
      * When the mouse leaves the link (hover out)
      */
     link.addEventListener("mouseleave", e => {
-      // Creates a new timeline to reverse/reset animations.
-      const tl = gsap.timeline();
+      const tl = gsap.timeline(); // Creates a timeline to animate everything back to normal.
 
-      tl.to([largeImage, smallImage], { duration: 1, autoAlpha: 0 }) // Fades both large & small floating images out.
-        .to(allLinks, { color: "#000", autoAlpha: 1 }, 0) // Resets all link colors + opacity to normal.
-        .to(pageBackground, { backgroundColor: "#ACB7AB", ease: "none" }, 0); // Resets the background color to the default neutral color.
+      tl.to([largeImage, smallImage], { duration: 1, autoAlpha: 0 }) // Fades both floating images out.
+        .to(allLinks, { color: "#000", autoAlpha: 1 }, 0) // Restores all links back to full opacity + black text.
+        .to(pageBackground, { backgroundColor: "#ACB7AB", ease: "none" }, 0); // Restores the default background color.
     });
 
     /**
      * Moves the floating images vertically based on mouse movement.
      */
     link.addEventListener("mousemove", e => {
-      // Gets the vertical mouse position inside the viewport.
-      const { clientY } = e;
+      const { clientY } = e; // Gets the mouse position on the Y-axis.
 
       gsap.to(largeImage, {
-        duration: 1.2, // Smooth, delayed follow effect.
-        y: getPortfolioOffset(clientY) / 6, // Moves the large image slightly (subtle parallax).
-        ease: "power3.out" // Smooth deceleration.
+        duration: 1.2, // Smooth, slightly delayed movement.
+        y: getPortfolioOffset(clientY) / 6, // Large image moves less for subtle depth.
+        ease: "power3.out" // Smooth easing curve.
       });
 
       gsap.to(smallImage, {
-        duration: 1.5, // Slightly slower for added depth.
+        duration: 1.5, // Slightly slower motion for layered depth.
         y: getPortfolioOffset(clientY) / 3, // Small image moves more for stronger parallax.
         ease: "power3.out" // Smooth easing.
       });
+    });
+  });
+};
+
+/** Initializes a parallax scrolling effect for images inside elements
+ *  that use the `.with-parallax` class.
+ */
+const initImageParallax = () => {
+  // Converts all elements matching ".with-parallax" into an array for easy looping
+  gsap.utils.toArray(".with-parallax").forEach(section => {
+    // Selects the <img> inside the current parallax-enabled section
+    const image = section.querySelector("img");
+
+    // Animates the image vertically as the user scrolls
+    gsap.to(image, {
+      yPercent: 20, // Moves the image 20% downward relative to its own height
+      ease: "none", // Removes easing so motion stays linear during scroll
+      scrollTrigger: {
+        trigger: section, // The animation is tied to this section's scroll position
+        start: "top bottom", // Animation starts when the section's top enters the bottom of the viewport
+        scrub: true // Syncs the animation to scrolling for a smooth parallax effect
+        // markers: true             // Optional: shows start/end points for debugging
+      }
+    });
+  });
+};
+
+/** Initializes pinned navigation behavior and dynamic background-color
+ *  updates while scrolling through sections (called “stages”).
+ */
+const initPinSteps = () => {
+  /** Creates a ScrollTrigger that pins the navigation bar while scrolling
+   *  through specific content.
+   */
+  ScrollTrigger.create({
+    trigger: ".fixed-nav", // Element that will be pinned (the fixed navigation)
+    endTrigger: "#stage4", // Pinning releases when the scroll reaches this element
+    start: "top center", // Pin starts when .fixed-nav’s top hits the center of the viewport
+    end: "center center", // Pin ends when #stage4’s center reaches the viewport center
+    pin: true // Enables pinning of the navigation bar
+    // markers: true              // Optional visual debugging markers
+  });
+
+  /** Helper function: returns the viewport height in pixels.
+   *  Handles cross-browser differences between documentElement and window.
+   */
+  const getVh = () => {
+    const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0); // Calculates the largest available viewport height value
+    return vh; // Returns the viewport height
+  };
+
+  /** Updates the page’s background fill color.
+   *  Uses a CSS custom property so transitions can be controlled in CSS.
+   */
+  const updateBodyColor = color => {
+    // Version using GSAP
+    gsap.to(".fill-background", { backgroundColor: color, ease: "none" });
+
+    // Using CSS variable to update background color instantly (not used here)
+    // document.documentElement.style.setProperty("--bcg-fill-color", color);
+  };
+
+  /** Loops through all elements with class `.stage`.
+   *  Each “stage” becomes its own ScrollTrigger that:
+   *  - Highlights the matching nav item
+   *  - Updates the body background color
+   */
+  gsap.utils.toArray(".stage").forEach((stage, index) => {
+    // Collects all navigation <li> elements so we can activate them by index
+    const navItems = gsap.utils.toArray(".fixed-nav li");
+
+    /** Creates a ScrollTrigger for each stage section. */
+    ScrollTrigger.create({
+      trigger: stage, // The section that activates this ScrollTrigger
+      start: "top center", // Trigger starts when the stage top hits the center
+      end: () => `+=${stage.clientHeight + getVh() / 10}`, // Dynamic end based on section height + small offset
+      toggleClass: {
+        targets: navItems[index], // Selects the matching <li> item
+        className: "is-active" // Adds/removes this class as the stage enters/leaves view
+      },
+      onEnter: () => updateBodyColor(stage.dataset.color), // Applies background color when scrolling down into stage
+      onEnterBack: () => updateBodyColor(stage.dataset.color) // Applies background color when scrolling up back into stage
+      // markers: true // Optional debugging markers
     });
   });
 };
@@ -310,6 +390,8 @@ const init = () => {
   initNavigation(); // Sets up all navigation animations and scroll triggers.
   initHeaderTilt(); // Sets up the header tilt effect.
   initPortfolioHover(); // Activates all portfolio hover interactions.
+  initImageParallax(); // Initializes the parallax scrolling effect on images
+  initPinSteps(); // Initializes the pinned navigation + color change behavior
 
   /**
    * Sets up the responsive hover reveal behavior (desktop only).
