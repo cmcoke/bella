@@ -1,24 +1,45 @@
 // Registers the ScrollTrigger plugin so GSAP can use it for scroll-based animations.
 gsap.registerPlugin(ScrollTrigger);
 
+const select = e => document.querySelector(e);
+
+const allLinks = gsap.utils.toArray(".portfolio__categories a");
+const largeImage = select(".portfolio__image--l");
+const smallImage = select(".portfolio__image--s");
+const lInside = select(".portfolio__image--l .image_inside");
+const sInside = select(".portfolio__image--s .image_inside");
+
+// Selects all elements with the class "rg__column" and stores them as a NodeList
+const sections = document.querySelectorAll(".rg__column");
+
+// Updates the CSS custom property controlling the page background color.
+const updateBodyColor = color => {
+  // Alternative GSAP animation version is commented out.
+  // Sets the --bcg-fill-color variable to the new color.
+  document.documentElement.style.setProperty("--bcg-fill-color", color);
+};
+
 /**
- * Initializes the navigation animations and behaviors.
+ * Initializes all animations and behavior for the main navigation,
+ * including hover-out effects and scroll-based hide/show animations
+ * using GSAP and ScrollTrigger.
  */
 const initNavigation = () => {
-  // Converts all navigation links inside ".main-nav" into an array.
+  // Selects all navigation links inside ".main-nav" and returns them as an array.
   const mainNavLinks = gsap.utils.toArray(".main-nav a");
 
-  // Creates a reversed copy of the navigation links (used for upward scrolling).
+  // Creates a reversed version of the navigation links (used when scrolling upward).
   const mainNavLinksRev = gsap.utils.toArray(".main-nav a").reverse();
 
   /**
-   * Adds a small hover-out animation:
-   * When the mouse leaves a link, add a class, then remove it after 300ms.
+   * Adds a short "hover-out" animation to each navigation link.
+   * When the user's mouse leaves a link, a CSS class is added briefly
+   * to trigger a styled fade/slide effect.
    */
   mainNavLinks.forEach(link => {
-    // Adds a "mouseleave" event listener to each nav link.
+    // Runs when the mouse leaves a specific navigation link.
     link.addEventListener("mouseleave", () => {
-      // Adds the class that triggers a CSS animation.
+      // Adds a class that starts the CSS hover-out animation.
       link.classList.add("animate-out");
 
       // Removes the animation class after 300ms so it can play again later.
@@ -29,48 +50,58 @@ const initNavigation = () => {
   });
 
   /**
-   * Creates a GSAP animation for the nav links depending on scroll direction.
+   * Creates a GSAP animation that hides or shows nav links
+   * depending on the scroll direction.
    *
-   * direction = 1   → scrolling down
-   * direction = -1  → scrolling up
+   * direction =  1 → scrolling down
+   * direction = -1 → scrolling up
    */
   const navAnimation = direction => {
-    // Determines whether user is scrolling downward.
+    // Checks if the user is scrolling downward (true/false).
     const scrollingDown = direction === 1;
 
-    // If scrolling down → animate normal order,
-    // If scrolling up → animate reversed order.
+    // Chooses normal order on scroll down, reversed order on scroll up.
     const links = scrollingDown ? mainNavLinks : mainNavLinksRev;
 
-    // Returns a GSAP tween that fades and shifts links.
+    // Returns a GSAP tween that fades and vertically shifts the links.
     return gsap.to(links, {
-      duration: 0.3, // Animation duration for each link.
-      stagger: 0.05, // Delay between each link's animation.
-      autoAlpha: () => (scrollingDown ? 0 : 1), // Fade out when scrolling down, fade in when scrolling up.
-      y: () => (scrollingDown ? 20 : 0), // Move links down (fade out) or reset to default.
-      ease: "power4.out" // Smooth easing curve.
+      duration: 0.3, // Duration of each link’s animation.
+      stagger: 0.05, // Time gap between each link’s animation.
+      autoAlpha: () => (scrollingDown ? 0 : 1), // Fade out on scroll down, fade in on scroll up.
+      y: () => (scrollingDown ? 20 : 0), // Move downward (hide) or reset back to original position.
+      ease: "power4.out" // Smooth easing for the transition.
     });
   };
 
   /**
-   * Creates a ScrollTrigger that monitors scroll position and triggers animations.
+   * Sets up a ScrollTrigger that:
+   * - Adds/removes a class on the <body> while scrolling,
+   * - Animates the navigation links based on scroll direction,
+   * - Defines the scroll range over which the nav behavior is active.
    */
   ScrollTrigger.create({
-    start: 100, // Animation starts once user scrolls 100px.
-    end: "bottom bottom-=200", // Ends 200px before reaching page bottom.
+    // The section that activates the navigation behavior.
+    trigger: "#main",
 
+    // When the top of "#main" reaches 100px *above* the viewport top.
+    start: "top top-=100",
+
+    // When the bottom of "#main" reaches 200px *above* the viewport bottom.
+    end: "bottom bottom-=200",
+
+    // Adds/removes a class on <body> during the active scroll range.
     toggleClass: {
-      targets: "body", // Applies class to the <body> element.
-      className: "has-scrolled" // A class that can change nav background, etc.
+      targets: "body",
+      className: "has-scrolled"
     },
 
-    // When scrolling forward (downward) past the start point.
+    // When entering the scroll range → animate based on direction.
     onEnter: ({ direction }) => navAnimation(direction),
 
-    // When scrolling backward (upward) past the start point.
+    // When scrolling back up into the range → animate again.
     onLeaveBack: ({ direction }) => navAnimation(direction)
 
-    // markers: true // Shows GSAP ScrollTrigger markers (for debugging).
+    // markers: true // (Optional) debug markers for ScrollTrigger.
   });
 };
 
@@ -155,9 +186,6 @@ const moveImages = e => {
   });
 };
 
-// Selects all elements with the class "rg__column" and stores them as a NodeList
-const sections = document.querySelectorAll(".rg__column");
-
 /**
  * Initializes the hover reveal animations by preparing each section and
  * attaching the appropriate event listeners.
@@ -229,72 +257,91 @@ const createHoverReveal = e => {
 };
 
 /**
- * Initializes all hover + movement interactions for the portfolio section.
+ * Initializes all hover and movement interactions for the portfolio section.
+ * - Fades/changes preview images when hovering links.
+ * - Highlights the active link and dims the others.
+ * - Updates background color based on hovered category.
+ * - Moves preview images vertically based on mouse position (parallax effect).
  */
 const initPortfolioHover = () => {
-  const allLinks = gsap.utils.toArray(".portfolio__categories a"); // Selects all category links and converts them to an array.
-  const pageBackground = document.querySelector(".fill-background"); // Selects the background element that will fade to different colors.
-  const largeImage = document.querySelector(".portfolio__image--l"); // Container for the large floating image.
-  const smallImage = document.querySelector(".portfolio__image--s"); // Container for the small floating image.
-  const lInside = document.querySelector(".portfolio__image--l .image_inside"); // Inner element that actually displays the large image.
-  const sIndise = document.querySelector(".portfolio__image--s .image_inside"); // Inner element that displays the small image.
-
-  /**
-   * Loop through each category link and attach hover + move events.
-   */
+  // Loops through every portfolio category link.
   allLinks.forEach(link => {
-    /**
-     * When the mouse enters a link (hover in)
-     */
-    link.addEventListener("mouseenter", e => {
-      // Extracts the color + image URLs stored in the hovered link’s data attributes.
-      const { color, imagelarge, imagesmall } = e.target.dataset;
-      // console.log(color, imagelarge, imagesmall);
+    // Runs hover animation when mouse enters the link.
+    link.addEventListener("mouseenter", createPortfolioHover);
 
-      // Creates an array of all other links (used to dim them on hover).
-      const allSiblings = allLinks.filter(item => item !== e.target);
+    // Runs reset animation when mouse leaves the link.
+    link.addEventListener("mouseleave", createPortfolioHover);
 
-      // Creates a GSAP timeline to sequence multiple animations smoothly.
-      const tl = gsap.timeline();
-
-      tl.set(lInside, { backgroundImage: `url(${imagelarge})` }) // Instantly updates the large preview image.
-        .set(sIndise, { backgroundImage: `url(${imagesmall})` }) // Instantly updates the small preview image.
-        .to([largeImage, smallImage], { duration: 1, autoAlpha: 1 }) // Fades both floating images into view.
-        .to(allSiblings, { color: "#fff", autoAlpha: 0.2 }, 0) // Fades + dims all non-hovered links (starts at same time 0).
-        .to(e.target, { color: "#fff", autoAlpha: 1 }, 0) // Highlights the hovered link (also at time 0).
-        .to(pageBackground, { backgroundColor: color, ease: "none" }, 0); // Changes page background color to the link’s assigned color.
-    });
-
-    /**
-     * When the mouse leaves the link (hover out)
-     */
-    link.addEventListener("mouseleave", e => {
-      const tl = gsap.timeline(); // Creates a timeline to animate everything back to normal.
-
-      tl.to([largeImage, smallImage], { duration: 1, autoAlpha: 0 }) // Fades both floating images out.
-        .to(allLinks, { color: "#000", autoAlpha: 1 }, 0) // Restores all links back to full opacity + black text.
-        .to(pageBackground, { backgroundColor: "#ACB7AB", ease: "none" }, 0); // Restores the default background color.
-    });
-
-    /**
-     * Moves the floating images vertically based on mouse movement.
-     */
-    link.addEventListener("mousemove", e => {
-      const { clientY } = e; // Gets the mouse position on the Y-axis.
-
-      gsap.to(largeImage, {
-        duration: 1.2, // Smooth, slightly delayed movement.
-        y: getPortfolioOffset(clientY) / 6, // Large image moves less for subtle depth.
-        ease: "power3.out" // Smooth easing curve.
-      });
-
-      gsap.to(smallImage, {
-        duration: 1.5, // Slightly slower motion for layered depth.
-        y: getPortfolioOffset(clientY) / 3, // Small image moves more for stronger parallax.
-        ease: "power3.out" // Smooth easing.
-      });
-    });
+    // Runs movement animation when the mouse moves over the link.
+    link.addEventListener("mousemove", createPortfolioMove);
   });
+};
+
+/**
+ * Handles hover-in and hover-out animations for each portfolio link.
+ */
+const createPortfolioHover = e => {
+  // If mouse is entering the link
+  if (e.type === "mouseenter") {
+    // Extract the custom data attributes (color + image URLs).
+    const { color, imagelarge, imagesmall } = e.target.dataset;
+
+    // Collect all links except the hovered one (to dim them out).
+    const allSiblings = allLinks.filter(item => item !== e.target);
+
+    // Create a GSAP timeline for the animation sequence.
+    const tl = gsap.timeline({
+      // Update page background color as soon as animation starts.
+      onStart: () => updateBodyColor(color)
+    });
+
+    tl.set(lInside, { backgroundImage: `url(${imagelarge})` }) // Apply large image URL immediately.
+      .set(sInside, { backgroundImage: `url(${imagesmall})` }) // Apply small image URL immediately.
+      .to([largeImage, smallImage], { autoAlpha: 1 }) // Fade both images in.
+      .to(allSiblings, { color: "#fff", autoAlpha: 0.2 }, 0) // Dim all non-hovered links.
+      .to(e.target, { color: "#fff", autoAlpha: 1 }, 0); // Brighten the hovered link.
+  }
+
+  // If mouse is leaving the link
+  else if (e.type === "mouseleave") {
+    // Create a GSAP timeline for resetting visuals.
+    const tl = gsap.timeline({
+      // Return background color to default.
+      onStart: () => updateBodyColor("#ACB7AE")
+    });
+
+    tl.to([largeImage, smallImage], { autoAlpha: 0 }) // Fade both images out.
+      .to(allLinks, { color: "#000000", autoAlpha: 1 }, 0); // Reset link colors + opacity.
+  }
+};
+
+/**
+ * Moves the floating images vertically to create a smooth parallax effect.
+ */
+const createPortfolioMove = e => {
+  const { clientY } = e; // Get vertical mouse position.
+
+  // Move large image (smaller movement = deeper layer).
+  gsap.to(largeImage, {
+    duration: 1.2,
+    y: getPortfolioOffset(clientY) / 6,
+    ease: "power3.out"
+  });
+
+  // Move small image (larger movement = closer layer).
+  gsap.to(smallImage, {
+    duration: 1.5,
+    y: getPortfolioOffset(clientY) / 3,
+    ease: "power3.out"
+  });
+};
+
+/**
+ * Calculates how far the images should move based on mouse position.
+ */
+const getPortfolioOffset = clientY => {
+  // Measures the height of the category area and subtracts the mouse Y position.
+  return -(select(".portfolio__categories").clientHeight - clientY);
 };
 
 /** Initializes a parallax scrolling effect for images inside elements
@@ -320,64 +367,109 @@ const initImageParallax = () => {
   });
 };
 
-/** Initializes pinned navigation behavior and dynamic background-color
- *  updates while scrolling through sections (called “stages”).
+/**
+ * Handles scroll-based interactions for the page sections (“stages”).
+ * - Pins the fixed navigation bar as the user scrolls.
+ * - Highlights the active navigation item based on scroll position.
+ * - Updates the background color when entering each stage.
  */
 const initPinSteps = () => {
-  /** Creates a ScrollTrigger that pins the navigation bar while scrolling
-   *  through specific content.
-   */
+  // Creates a ScrollTrigger that pins the navigation bar while scrolling.
   ScrollTrigger.create({
-    trigger: ".fixed-nav", // Element that will be pinned (the fixed navigation)
-    endTrigger: "#stage4", // Pinning releases when the scroll reaches this element
-    start: "top center", // Pin starts when .fixed-nav’s top hits the center of the viewport
-    end: "center center", // Pin ends when #stage4’s center reaches the viewport center
-    pin: true // Enables pinning of the navigation bar
-    // markers: true              // Optional visual debugging markers
+    trigger: ".fixed-nav", // Element whose scroll position activates the pin.
+    start: "top center", // When `.fixed-nav` reaches the center of the viewport.
+    endTrigger: "#stage4", // The pin lasts until reaching the final stage.
+    end: "center center", // Ends when `#stage4`’s center aligns with viewport center.
+    pin: true, // Enables pinning behavior (locks `.fixed-nav` in place).
+    pinReparent: true // Avoids layout issues by temporarily moving the pinned element.
   });
 
-  /** Helper function: returns the viewport height in pixels.
-   *  Handles cross-browser differences between documentElement and window.
-   */
+  // Helper function that returns the viewport height.
   const getVh = () => {
-    const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0); // Calculates the largest available viewport height value
-    return vh; // Returns the viewport height
+    const vh = Math.max(
+      document.documentElement.clientHeight || 0, // Height from document root.
+      window.innerHeight || 0 // Height from window.
+    );
+    return vh; // Returns the calculated viewport height.
   };
 
-  /** Updates the page’s background fill color.
-   *  Uses a CSS custom property so transitions can be controlled in CSS.
-   */
-  const updateBodyColor = color => {
-    // Version using GSAP
-    gsap.to(".fill-background", { backgroundColor: color, ease: "none" });
-
-    // Using CSS variable to update background color instantly (not used here)
-    // document.documentElement.style.setProperty("--bcg-fill-color", color);
-  };
-
-  /** Loops through all elements with class `.stage`.
-   *  Each “stage” becomes its own ScrollTrigger that:
-   *  - Highlights the matching nav item
-   *  - Updates the body background color
-   */
+  // Loops through all `.stage` sections on the page.
   gsap.utils.toArray(".stage").forEach((stage, index) => {
-    // Collects all navigation <li> elements so we can activate them by index
-    const navItems = gsap.utils.toArray(".fixed-nav li");
+    // Selects the corresponding navigation list items.
+    const navLinks = gsap.utils.toArray(".fixed-nav li");
 
-    /** Creates a ScrollTrigger for each stage section. */
+    // Creates a ScrollTrigger for each individual stage.
     ScrollTrigger.create({
-      trigger: stage, // The section that activates this ScrollTrigger
-      start: "top center", // Trigger starts when the stage top hits the center
-      end: () => `+=${stage.clientHeight + getVh() / 10}`, // Dynamic end based on section height + small offset
+      trigger: stage, // The current stage section.
+      start: "top center", // Activation when the stage hits viewport center.
+      end: () => `+=${stage.clientHeight + getVh() / 10}`,
+      // End dynamically calculated: stage height + 10% of viewport for smoothness.
+
       toggleClass: {
-        targets: navItems[index], // Selects the matching <li> item
-        className: "is-active" // Adds/removes this class as the stage enters/leaves view
+        targets: navLinks[index], // Navigation item to activate.
+        className: "is-active" // Class applied while this stage is active.
       },
-      onEnter: () => updateBodyColor(stage.dataset.color), // Applies background color when scrolling down into stage
-      onEnterBack: () => updateBodyColor(stage.dataset.color) // Applies background color when scrolling up back into stage
-      // markers: true // Optional debugging markers
+
+      // When scrolling forward into this stage: update background color.
+      onEnter: () => updateBodyColor(stage.dataset.color),
+
+      // When scrolling backward into this stage: update background color again.
+      onEnterBack: () => updateBodyColor(stage.dataset.color)
     });
   });
+};
+
+/**
+ * Enables smooth scrolling when clicking navigation links in the fixed menu.
+ * Each link smoothly scrolls the page to its corresponding section using
+ * Smooth Scrollbar's scrollIntoView method.
+ */
+
+const initScrollTo = () => {
+  // Converts all fixed-nav links into an array so we can loop through them.
+  gsap.utils.toArray(".fixed-nav a").forEach(link => {
+    // Gets the target section ID (e.g. "#stage2") from the link's href.
+    const target = link.getAttribute("href");
+
+    link.addEventListener("click", e => {
+      // Prevents the browser's default jump-to-anchor behavior.
+      e.preventDefault();
+
+      // Uses Smooth Scrollbar’s scrollIntoView to smoothly scroll the page
+      // to the target section, with a cushion of 100px from the top.
+      bodyScrollBar.scrollIntoView(document.querySelector(target), { damping: 0.07, offsetTop: 100 });
+    });
+  });
+};
+
+/**
+ * Initializes Smooth Scrollbar and connects it to GSAP ScrollTrigger.
+ * This setup replaces the browser's native scrolling with Smooth Scrollbar
+ * while ensuring ScrollTrigger animations stay perfectly in sync with it.
+ */
+const initSmoothScrollBar = () => {
+  // Initializes Smooth Scrollbar on the #viewport element with easing ("damping").
+  // Saves the scrollbar instance so it can be accessed later.
+  bodyScrollBar = Scrollbar.init(document.querySelector("#viewport"), { damping: 0.07 });
+
+  // Removes the horizontal scrollbar track entirely so only vertical scrolling is used.
+  bodyScrollBar.track.xAxis.element.remove();
+
+  // Creates a scroller proxy so ScrollTrigger uses Smooth Scrollbar's scroll position
+  // instead of the browser’s native scroll position.
+  ScrollTrigger.scrollerProxy(document.body, {
+    // This acts as both a setter and getter for scrollTop:
+    scrollTop(value) {
+      if (arguments.length) {
+        bodyScrollBar.scrollTop = value; // If a value is provided, set scrollbar position.
+      }
+      return bodyScrollBar.scrollTop; // Otherwise return current scrollbar position.
+    }
+  });
+
+  // Ensures ScrollTrigger updates on every Smooth Scrollbar movement,
+  // keeping animations perfectly synchronized with the custom scroll.
+  bodyScrollBar.addListener(ScrollTrigger.update);
 };
 
 // Create a MediaQueryList object that tracks when the viewport is >= 768px
@@ -387,11 +479,13 @@ const mq = window.matchMedia("(min-width: 768px)");
  * Runs once after everything on the page has finished loading.
  */
 const init = () => {
+  initSmoothScrollBar(); // Enables Smooth Scrollbar and syncs it with ScrollTrigger.
   initNavigation(); // Sets up all navigation animations and scroll triggers.
   initHeaderTilt(); // Sets up the header tilt effect.
   initPortfolioHover(); // Activates all portfolio hover interactions.
-  initImageParallax(); // Initializes the parallax scrolling effect on images
-  initPinSteps(); // Initializes the pinned navigation + color change behavior
+  initImageParallax(); // Applies parallax movement to images inside designated sections.
+  initPinSteps(); // Pins the navigation and highlights active sections during scroll.
+  initScrollTo(); // Enables smooth scrolling when clicking navigation links.
 
   /**
    * Sets up the responsive hover reveal behavior (desktop only).
@@ -459,10 +553,4 @@ const handleWidthChange = e => {
       resetProps([imageBlock, mask, text, textCopy, textMask, textP, image]);
     });
   }
-};
-
-// Calculates a vertical offset relative to the category container height.
-// Used for creating smooth parallax movement based on mouse position. (used in the portfoilio hover effect)
-const getPortfolioOffset = clientY => {
-  return -(document.querySelector(".portfolio__categories").clientHeight - clientY);
 };
