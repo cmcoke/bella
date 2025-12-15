@@ -1,16 +1,170 @@
 // Registers the ScrollTrigger plugin so GSAP can use it for scroll-based animations.
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger, GSDevTools);
 
 const select = e => document.querySelector(e);
+const selectAll = e => document.querySelectorAll(e);
 
 const allLinks = gsap.utils.toArray(".portfolio__categories a");
 const largeImage = select(".portfolio__image--l");
 const smallImage = select(".portfolio__image--s");
 const lInside = select(".portfolio__image--l .image_inside");
 const sInside = select(".portfolio__image--s .image_inside");
+const loader = select(".loader");
+const loaderInner = select(".loader .inner");
+const progressBar = select(".loader .progress");
 
 // Selects all elements with the class "rg__column" and stores them as a NodeList
 const sections = document.querySelectorAll(".rg__column");
+
+// Shows the loader immediately on page load.
+gsap.set(loader, { autoAlpha: 1 });
+
+// Sets the loader inner scale to nearly zero (collapsed state).
+gsap.set(loaderInner, {
+  scaleY: 0.005,
+  transformOrigin: "bottom"
+});
+
+// Creates a paused GSAP tween for the progress bar scale animation.
+const progressTween = gsap.to(progressBar, {
+  paused: true,
+  scaleX: 0,
+  ease: "none",
+  transformOrigin: "right"
+});
+
+// Keeps track of how many images have loaded.
+let loadedImageCount = 0,
+  imageCount;
+
+// Selects the main content container where images are located.
+const container = select("#main");
+
+// Initializes imagesLoaded on the main container.
+const imgLoad = imagesLoaded(container);
+
+// Stores the total number of images to be loaded.
+imageCount = imgLoad.images.length;
+
+// Sets the progress bar to 0% initially.
+updateProgress(0);
+
+// Runs every time an image finishes loading.
+imgLoad.on("progress", function () {
+  // Increments the count of loaded images.
+  loadedImageCount++;
+
+  // Updates the progress bar based on current load count.
+  updateProgress(loadedImageCount);
+});
+
+// Updates the progress bar animation based on load percentage.
+function updateProgress(value) {
+  // Animates the progress tween to match the loading ratio.
+  gsap.to(progressTween, {
+    progress: value / imageCount,
+    duration: 0.3,
+    ease: "power1.out"
+  });
+}
+
+// Runs once *all* images have finished loading.
+imgLoad.on("done", function () {
+  // Hides the progress bar and starts the loader animation.
+  gsap.set(progressBar, {
+    autoAlpha: 0,
+    onComplete: initLoader
+  });
+});
+
+/**
+ * Handles the loader entrance and exit animations.
+ */
+const initLoader = () => {
+  // Selects loader elements needed for animation.
+  const loaderInner = select(".loader .inner");
+  const image = select(".loader__image img");
+  const mask = select(".loader__image--mask");
+  const line1 = select(".loader__title--mask:nth-child(1) span");
+  const line2 = select(".loader__title--mask:nth-child(2) span");
+  const lines = selectAll(".loader__title--mask");
+  const loaderContent = select(".loader__content");
+
+  /**
+   * Loader entrance animation:
+   * Expands loader, reveals image and text,
+   * and removes loading class from the body.
+   */
+  const tlLoaderIn = gsap.timeline({
+    id: "tlLoaderIn",
+    defaults: {
+      duration: 1.1,
+      ease: "power2.out"
+    },
+    onComplete: () => select("body").classList.remove("is-loading")
+  });
+
+  tlLoaderIn
+    // Makes loader content visible.
+    .set(loaderContent, { autoAlpha: 1 })
+
+    // Expands the loader vertically.
+    .to(loaderInner, {
+      scaleY: 1,
+      transformOrigin: "bottom",
+      ease: "power1.inOut"
+    })
+
+    // Adds a label to synchronize image and text reveals.
+    .addLabel("revealImage")
+
+    // Slides the image mask upward.
+    .from(mask, { yPercent: 100 }, "revealImage-=0.6")
+
+    // Slides the image slightly downward into view.
+    .from(image, { yPercent: -80 }, "revealImage-=0.6")
+
+    // Reveals title lines with a staggered animation.
+    .from(
+      [line1, line2],
+      {
+        yPercent: 100,
+        stagger: 0.1
+      },
+      "revealImage-=0.4"
+    );
+
+  /**
+   * Loader exit animation:
+   * Moves text and loader off-screen and reveals the page.
+   */
+  const tlLoaderOut = gsap.timeline({
+    id: "tlLoaderOut",
+    defaults: {
+      duration: 1.1,
+      ease: "power2.inOut"
+    },
+    delay: 1
+  });
+
+  tlLoaderOut
+    // Moves title text upward and out of view.
+    .to(lines, { yPercent: -500, stagger: 0.2 }, 0)
+
+    // Slides the loader off the screen.
+    .to([loader, loaderContent], { yPercent: -100 }, 0.2)
+
+    // Animates the main content into view.
+    .from("#main", { y: 150 }, 0.2);
+
+  // Master timeline that runs entrance then exit animations.
+  const tlLoader = gsap.timeline();
+
+  tlLoader.add(tlLoaderIn).add(tlLoaderOut);
+
+  // Optional GSAP debugging UI.
+  // GSDevTools.create({ paused: true });
+};
 
 // Updates the CSS custom property controlling the page background color.
 const updateBodyColor = color => {
@@ -473,35 +627,35 @@ const initSmoothScrollBar = () => {
 };
 
 // Create a MediaQueryList object that tracks when the viewport is >= 768px
-const mq = window.matchMedia("(min-width: 768px)");
+// const mq = window.matchMedia("(min-width: 768px)");
 
 /**
  * Runs once after everything on the page has finished loading.
  */
 const init = () => {
-  initSmoothScrollBar(); // Enables Smooth Scrollbar and syncs it with ScrollTrigger.
-  initNavigation(); // Sets up all navigation animations and scroll triggers.
-  initHeaderTilt(); // Sets up the header tilt effect.
-  initPortfolioHover(); // Activates all portfolio hover interactions.
-  initImageParallax(); // Applies parallax movement to images inside designated sections.
-  initPinSteps(); // Pins the navigation and highlights active sections during scroll.
-  initScrollTo(); // Enables smooth scrolling when clicking navigation links.
-
+  initLoader();
+  // initSmoothScrollBar(); // Enables Smooth Scrollbar and syncs it with ScrollTrigger.
+  // initNavigation(); // Sets up all navigation animations and scroll triggers.
+  // initHeaderTilt(); // Sets up the header tilt effect.
+  // initPortfolioHover(); // Activates all portfolio hover interactions.
+  // initImageParallax(); // Applies parallax movement to images inside designated sections.
+  // initPinSteps(); // Pins the navigation and highlights active sections during scroll.
+  // initScrollTo(); // Enables smooth scrolling when clicking navigation links.
   /**
    * Sets up the responsive hover reveal behavior (desktop only).
    * This ensures hover animations only run after the page is fully loaded.
    */
-  mq.addEventListener("change", handleWidthChange); // Listen for viewport changes
-  handleWidthChange(mq); // Run immediately on load
+  // mq.addEventListener("change", handleWidthChange); // Listen for viewport changes
+  // handleWidthChange(mq); // Run immediately on load
 };
 
 /**
  * Waits for the entire page (HTML, images, fonts, etc.) to fully load.
  * Once loaded, the init() function is called.
  */
-window.addEventListener("load", () => {
-  init(); // Starts the main initialization process.
-});
+// window.addEventListener("load", () => {
+//   init(); // Starts the main initialization process.
+// });
 
 /**
  * This script watches for screen-width changes using matchMedia.
@@ -513,44 +667,44 @@ window.addEventListener("load", () => {
 /**
  * Resets GSAP-related properties and removes inline styles from a list of elements.
  */
-const resetProps = elements => {
-  gsap.killTweensOf("*"); // Immediately stop all GSAP tweens globally to prevent leftover animations
+// const resetProps = elements => {
+//   gsap.killTweensOf("*"); // Immediately stop all GSAP tweens globally to prevent leftover animations
 
-  /**
-   * If the array contains elements, loop through each one and clear
-   * any inline GSAP-applied CSS properties (transform, opacity, etc.).
-   */
-  if (elements.length) {
-    elements.forEach(el => {
-      el && gsap.set(el, { clearProps: "all" }); // Only run if `el` exists; clears all inline properties
-    });
-  }
-};
+//   /**
+//    * If the array contains elements, loop through each one and clear
+//    * any inline GSAP-applied CSS properties (transform, opacity, etc.).
+//    */
+//   if (elements.length) {
+//     elements.forEach(el => {
+//       el && gsap.set(el, { clearProps: "all" }); // Only run if `el` exists; clears all inline properties
+//     });
+//   }
+// };
 
 /**
  * Handles what should happen when the screen width enters or leaves the min-width condition.
  * Runs whenever the media query match status changes.
  */
-const handleWidthChange = e => {
-  // If the media query *matches*, meaning viewport is >= 768px, enable the hover reveal animation
-  if (e.matches) {
-    initHoverReveal();
-  } else {
-    // Otherwise, the viewport is smaller (mobile sizes)
+// const handleWidthChange = e => {
+//   // If the media query *matches*, meaning viewport is >= 768px, enable the hover reveal animation
+//   if (e.matches) {
+//     initHoverReveal();
+//   } else {
+//     // Otherwise, the viewport is smaller (mobile sizes)
 
-    /**
-     * Loop through each section and remove mouse-based reveal interactions,
-     * since hover effects are not suitable for touch devices.
-     */
-    sections.forEach(section => {
-      section.removeEventListener("mouseenter", createHoverReveal); // Remove hover-in event
-      section.removeEventListener("mouseleave", createHoverReveal); // Remove hover-out event
+//     /**
+//      * Loop through each section and remove mouse-based reveal interactions,
+//      * since hover effects are not suitable for touch devices.
+//      */
+//     sections.forEach(section => {
+//       section.removeEventListener("mouseenter", createHoverReveal); // Remove hover-in event
+//       section.removeEventListener("mouseleave", createHoverReveal); // Remove hover-out event
 
-      // Extract related elements for clearing GSAP properties
-      const { imageBlock, mask, text, textCopy, textMask, textP, image } = section;
+//       // Extract related elements for clearing GSAP properties
+//       const { imageBlock, mask, text, textCopy, textMask, textP, image } = section;
 
-      // Reset all GSAP inline styles for these elements
-      resetProps([imageBlock, mask, text, textCopy, textMask, textP, image]);
-    });
-  }
-};
+//       // Reset all GSAP inline styles for these elements
+//       resetProps([imageBlock, mask, text, textCopy, textMask, textP, image]);
+//     });
+//   }
+// };
