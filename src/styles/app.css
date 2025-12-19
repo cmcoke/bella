@@ -26,9 +26,8 @@
 body {
   font: 16px/1.7 "Source Sans Pro", Helvetica, Helvetica Neue, Arial, sans-serif;
   color: var(--text-dark-color);
-  overflow-y: scroll;
+  /* overflow-y: scroll; */
 }
-
 /* hide page content by default */
 .is-loading #main,
 .is-loading .logo,
@@ -37,10 +36,12 @@ body {
 .is-loading .fill-background {
   display: none;
 }
-
-,
 .is-loading {
   background-color: var(--bcg-loaderblue);
+}
+.is-transitioning {
+  pointer-events: none;
+  cursor: progress;
 }
 
 #viewport {
@@ -66,7 +67,7 @@ body {
 .logo__img {
   width: 55px;
   height: 55px;
-  background: url("../img/img_logo.svg") no-repeat center;
+  background: url("../assets/images/img_logo.svg") no-repeat center;
   background-size: 55px 55px;
   display: block;
   position: absolute;
@@ -142,61 +143,34 @@ body {
   position: relative;
   overflow: hidden;
 }
-/* 
- * Styles the pseudo-element that appears under each navigation link.
- * This creates an "underline" bar that is initially positioned 
- * completely to the left (hidden from view).
- */
-.main-nav a:after {
-  display: block; /* Makes the pseudo-element act like a block element */
-  content: ""; /* Required to display the pseudo-element */
-  height: 2px; /* Thickness of the underline */
-  background-color: var(--text-color); /* Underline color */
-  position: absolute; /* Allows precise placement relative to the link */
-  bottom: 0; /* Positions underline at the bottom of the link */
-  width: 100%; /* Underline spans the full width of the link */
-  transform: translateX(-101%); /* Moves underline fully off-screen to the left */
+.main-nav a::after {
+  display: block;
+  content: "";
+  height: 2px;
+  background-color: var(--text-color);
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  transform: translateX(-101%);
 }
-
-/*
- * When the link is hovered, animate the underline into view
- * by sliding it horizontally from left to right.
- */
 .main-nav a:hover::after {
-  transition: transform 0.3s var(--easing); /* Smooth animation for the slide-in */
-  transform: translateX(0); /* Moves underline into its visible position */
+  transition: transform 0.3s var(--easing);
+  transform: translateX(0);
 }
-
-/*
- * When the "animate-out" class is applied, animate the underline
- * sliding out to the right—useful for controlled exit animations.
- */
 .main-nav a.animate-out::after {
-  transition: transform 0.3s var(--easing); /* Smooth animation for the slide-out */
-  transform: translateX(100%); /* Moves underline off-screen to the right */
+  transition: transform 0.3s var(--easing);
+  transform: translateX(100%);
 }
 
 /* Reveal logo and move buger when the user scrolls */
-/* 
- * When the page has the class "has-scrolled" 
- * animate the burger icon off-screen to the right.
- */
 .has-scrolled .burger {
-  transform: translateX(100%); /* Moves the burger icon out of view */
+  transform: translateX(100%);
 }
-
-/*
- * When scrolled, make the logo image visible by increasing its opacity.
- */
 .has-scrolled .logo__img {
-  opacity: 1; /* Fully visible logo image */
+  opacity: 1;
 }
-
-/*
- * When scrolled, fade out the text portion of the logo.
- */
 .has-scrolled .logo__text {
-  opacity: 0; /* Makes the logo text invisible */
+  opacity: 0;
 }
 
 /* =Header */
@@ -250,14 +224,14 @@ header h1 span {
   top: auto;
   bottom: -3.8vw;
   left: 58%;
-  background: url("../img/img_logo.svg") no-repeat center;
+  background: url("../assets/images/img_logo.svg") no-repeat center;
   background-size: 50% 50%;
   pointer-events: none;
 }
 .cta__circle--logo {
   width: 7.7vw;
   height: 7.7vw;
-  background: url("../img/img_scroll-badge.svg") no-repeat center;
+  background: url("../assets/images/img_scroll-badge.svg") no-repeat center;
   background-size: 100% 100%;
   animation: rotation 45s linear infinite;
   position: absolute;
@@ -284,7 +258,6 @@ header h1 span {
   Have fun:)
 
 */
-
 .hg__image,
 .rg__image {
   position: absolute;
@@ -355,7 +328,7 @@ header h1 span {
 /* =Reveal Gallery */
 .reveal-gallery {
   width: 100%;
-  height: 100vh;
+  flex-direction: column;
   overflow: hidden;
   display: flex;
   justify-content: center;
@@ -371,6 +344,7 @@ header h1 span {
   justify-content: center;
   position: relative;
   overflow: hidden;
+  min-height: 50vh;
 }
 .rg__text--heading h3 {
   font-size: 3.6vw;
@@ -396,9 +370,9 @@ header h1 span {
   font-weight: 300;
   letter-spacing: 0.03vw;
 }
-/* .rg__column.left {background-color:var(--bcg-lightgreen)}
-.rg__column.center {background-color: var(--bcg-lightbrown)}
-.rg__column.right {background-color:var(--bcg-lightblue)} */
+.rg__text--copy p {
+  margin: 0;
+}
 .rg__column::before {
   display: block;
   position: absolute;
@@ -415,31 +389,18 @@ header h1 span {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  /* transform: translateY(-100%);
-  transition: transform 0.45s var(--easing); */
 }
 .rg__image--mask {
   height: 100%;
   overflow: hidden;
-  /* transition: transform 0.45s var(--easing);
-  transform: translateY(100%); */
 }
 .rg__image img {
   opacity: 0.6;
-}
-.rg__column.is-active .rg__image,
-.rg__column.is-active .rg__image--mask {
-  /* transform: translateY(0); */
 }
 .rg__text--copy {
   position: absolute;
   overflow: hidden;
 }
-
-.rg__text--copy p {
-  margin: 0;
-}
-
 .rg__text--mask {
   overflow: hidden;
 }
@@ -464,7 +425,7 @@ header h1 span {
   align-items: center;
   width: 100%;
   height: 100%;
-  background: var(--bcg-loaderblue) url("../img/img_logo.svg") no-repeat center;
+  background: var(--bcg-loaderblue) url("../assets/images/img_logo.svg") no-repeat center;
   background-size: 155px 155px;
   overflow: hidden;
 }
@@ -477,7 +438,6 @@ header h1 span {
   background-color: var(--bcg-loaderbluedark);
   position: relative;
 }
-
 .loader .progress {
   background-color: var(--bcg-lightblue);
   position: absolute;
@@ -486,7 +446,6 @@ header h1 span {
   width: var(--loader-width);
   height: var(--loader-height);
 }
-
 .loader__content {
   z-index: 5;
   display: flex;
@@ -508,22 +467,11 @@ header h1 span {
   transform: translate(-50%, -50%);
   z-index: 5;
 }
-
 .loader__image {
   width: var(--loader-width);
   padding-bottom: 50vh;
   overflow: hidden;
   position: relative;
-}
-.loader__image img {
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  object-fit: cover;
-  object-position: 50% 50%;
-  opacity: 0.8;
 }
 .loader__title--mask {
   overflow: hidden;
@@ -536,6 +484,10 @@ header h1 span {
   width: 100%;
   height: 100%;
   position: absolute;
+}
+
+.loader__title--mask {
+  overflow: hidden;
 }
 
 .loader__title--mask {
@@ -801,6 +753,24 @@ section {
 }
 
 /* GSAP dev tool */
-.gs-dev-tools {
+/* .gs-dev-tools {
   z-index: 100;
+} */
+
+/* While Barba is working, prevent all mouse interactions */
+body.is-transitioning {
+  pointer-events: none;
+  cursor: wait;
+}
+
+/* Optional: visually dim active navigation links so they don't look clickable */
+.main-nav a[aria-current="page"],
+.main-nav a.is-active {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Disable clicking when transitioning */
+.is-transitioning a {
+  pointer-events: none !important;
 }
